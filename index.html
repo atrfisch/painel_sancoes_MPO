@@ -157,6 +157,9 @@
             d.interesseMpo = !!savedMpoInterests[d.materia];
         });
 
+        // Ordena a listagem principal pelo prazo de sanção (do mais próximo ao mais distante)
+        dados.sort((a, b) => a.prazo.localeCompare(b.prazo));
+
         // Lógica de tempo - Zera as horas para comparação exata de dias
         const today = new Date();
         today.setHours(0,0,0,0);
