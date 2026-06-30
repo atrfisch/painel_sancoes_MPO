@@ -15,36 +15,50 @@ def extrair_dados():
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # Converte todo o HTML da página em um texto corrido com espaços
-        # Isso evita que a extração quebre se o Congresso não usar tabelas ou mudar as tags (<li>, <div>)
-        texto_limpo = re.sub(r'\s+', ' ', soup.get_text())
+        # Pega todo o texto da página garantindo que haverá espaço entre elementos HTML diferentes
+        texto = soup.get_text(separator=' ', strip=True)
+        # Substitui múltiplos espaços ou quebras de linha por um único espaço
+        texto_limpo = re.sub(r'\s+', ' ', texto)
         
         materias = []
-        hoje = datetime.now()
+        hoje = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
-        # Regex avançada: Procura e extrai os rótulos exatos em qualquer lugar do texto do site
-        padrao = re.compile(
-            r"Matéria:\s*(.*?)\s+Ementa:\s*(.*?)\s+Recebimento pela Presidência:\s*(\d{2}/\d{2}/\d{4})\s+Prazo para sanção:\s*(\d{2}/\d{2}/\d{4})",
-            re.IGNORECASE
-        )
-        
-        matches = padrao.finditer(texto_limpo)
-        
-        for match in matches:
-            materia_raw = match.group(1).strip()
-            ementa = match.group(2).strip()
-            recebimento_str = match.group(3).strip()
-            prazo_str = match.group(4).strip()
+        if 'Matéria:' not in texto_limpo:
+            print("Aviso: A estrutura do site não contém a palavra 'Matéria:'.")
+            return []
             
-            # Limpa o texto da matéria. Ex: "PL 5868/2025 (PL 5868...)" vira "PL 5868/2025"
-            materia = materia_raw.split('(')[0].strip()
-            
+        # O split cria uma lista onde cada item começa após a palavra 'Matéria:'
+        blocos = texto_limpo.split('Matéria:')[1:] 
+        
+        for bloco in blocos:
             try:
+                # Se faltar algum dos campos obrigatórios, ignora o bloco
+                if 'Ementa:' not in bloco or 'Recebimento pela Presidência:' not in bloco or 'Prazo para sanção:' not in bloco:
+                    continue
+                    
+                # Extração cirúrgica cortando as partes exatas do texto
+                parte1, resto = bloco.split('Ementa:', 1)
+                materia_raw = parte1.strip()
+                
+                parte2, resto = resto.split('Recebimento pela Presidência:', 1)
+                ementa = parte2.strip()
+                
+                parte3, resto = resto.split('Prazo para sanção:', 1)
+                recebimento_str = parte3.strip()
+                
+                # A data final de sanção é a primeira coisa logo após a âncora
+                prazo_str = resto.strip().split()[0]
+                
+                # Limpa a Matéria (ex: "PL 5868/2025 (PL 5868..." -> "PL 5868/2025")
+                materia = materia_raw.split('(')[0].strip()
+                if not materia: 
+                    materia = materia_raw
+                    
                 recebimento_dt = datetime.strptime(recebimento_str, '%d/%m/%Y')
                 prazo_dt = datetime.strptime(prazo_str, '%d/%m/%Y')
                 
-                # Ignora matérias cujos prazos já encerraram ontem ou antes
-                if prazo_dt >= hoje.replace(hour=0, minute=0, second=0, microsecond=0):
+                # Regra: Só guarda matérias que ainda não venceram
+                if prazo_dt >= hoje:
                     materias.append({
                         "materia": materia,
                         "ementa": ementa,
@@ -52,46 +66,39 @@ def extrair_dados():
                         "prazo": prazo_dt.strftime('%Y-%m-%d')
                     })
             except Exception as e:
-                print(f"Erro ao analisar data de {materia}: {e}")
+                print(f"Aviso: Erro ao analisar uma matéria específica: {e}")
                 continue
                 
-        print(f"Extração concluída: {len(materias)} matérias encontradas e tratadas.")
+        print(f"Extração concluída: {len(materias)} matérias válidas e dentro do prazo capturadas com sucesso.")
         return materias
         
     except Exception as e:
-        print(f"Erro crasso na extração: {e}")
+        print(f"Erro crítico ao tentar extrair dados do site: {e}")
         return []
 
 def atualizar_html(dados):
     if not dados:
-        print("Aviso: A extração retornou zero dados. O index.html não será modificado.")
+        print("Aviso: Nenhuma matéria foi extraída. O index.html não será alterado para evitar apagar a lista atual.")
         return
 
     try:
         with open('index.html', 'r', encoding='utf-8') as f:
             html = f.read()
         
-        # Converte a lista em JSON puro
+        # Converte a lista do Python para formato Javascript puro
         dados_json = json.dumps(dados, indent=4, ensure_ascii=False)
+        novo_conteudo = f'<!-- ROBOT_DATA_START -->\n        <script>\n        const dados = {dados_json};\n        </script>\n        <!-- ROBOT_DATA_END -->'
         
-        # Procura exatamente pelas flags HTML e substitui com perfeição todo o bloco
-        padrao = r'(<!-- ROBOT_DATA_START -->).*?(<!-- ROBOT_DATA_END -->)'
-        novo_html = re.sub(
-            padrao, 
-            rf'\1\n        <script>\n        const dados = {dados_json};\n        </script>\n        \2', 
-            html, 
-            flags=re.DOTALL
-        )
+        padrao = r'<!-- ROBOT_DATA_START -->.*?<!-- ROBOT_DATA_END -->'
+        novo_html = re.sub(padrao, novo_conteudo, html, flags=re.DOTALL)
         
         with open('index.html', 'w', encoding='utf-8') as f:
             f.write(novo_html)
             
-        print("Sucesso! index.html foi alimentado com a nova base.")
+        print("Sucesso! Os novos projetos de lei foram injetados no arquivo index.html.")
         
-    except FileNotFoundError:
-        print("Erro: Não encontrei o index.html na raiz do seu projeto.")
     except Exception as e:
-        print(f"Erro ao gravar o arquivo: {e}")
+        print(f"Erro ao salvar os dados no HTML: {e}")
 
 if __name__ == "__main__":
     lista_materias = extrair_dados()
