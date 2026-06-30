@@ -10,30 +10,18 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc; /* slate-50 */
+            background-color: #f8fafc;
         }
         
-        /* Customização elegante da barra de rolagem */
-        .custom-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scroll::-webkit-scrollbar-track {
-            background: #f1f5f9; 
-            border-radius: 8px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 8px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="p-4 md:p-8 text-slate-800 antialiased">
     <div class="max-w-7xl mx-auto space-y-8">
         
-        <!-- Header -->
         <header class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-200 pb-5 gap-4">
             <div>
                 <div class="flex items-center gap-3 mb-1">
@@ -44,16 +32,33 @@
                     </div>
                     <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Painel de Sanções</h1>
                 </div>
-                <p class="text-slate-500 font-medium">Acompanhamento dos prazos de matérias aguardando deliberação da Presidência.</p>
+                <p class="text-slate-500 font-medium">Acompanhamento automatizado de matérias aguardando deliberação da Presidência.</p>
             </div>
             
-            <div class="bg-slate-100 border border-slate-200 px-4 py-2 rounded-lg flex items-center gap-2 shadow-inner">
-                <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-sm font-semibold text-slate-600">Armazenamento Local Ativo</span>
+            <div class="bg-slate-100 border border-slate-200 px-4 py-2 rounded-lg flex flex-col sm:flex-row items-center gap-3 shadow-inner">
+                <div class="flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-semibold text-slate-600">Atualizado via Robô</span>
+                </div>
+                <div class="hidden sm:block w-px h-4 bg-slate-300"></div>
+                <span class="text-xs text-slate-500 font-mono" id="data-atual-visor"></span>
             </div>
         </header>
 
-        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <!-- Card: Vencidos / Encerrados -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden flex flex-col h-80">
+                <div class="absolute top-0 left-0 w-full h-1 bg-slate-700"></div>
+                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Prazos Encerrados
+                </h2>
+                <div id="vencidos-list" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-2"></div>
+            </div>
+
             <!-- Card: Hoje -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden flex flex-col h-80">
                 <div class="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
@@ -73,7 +78,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    Expiram nos Próximos 7 dias
+                    Próximos 7 dias
                 </h2>
                 <div id="semana-list" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-2"></div>
             </div>
@@ -84,7 +89,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                Linha do Tempo (Demais Prazos)
+                Linha do Tempo (Demais Prazos Futuros)
             </h2>
             <ol class="relative border-l-2 border-blue-200 ml-4" id="timeline-list"></ol>
         </section>
@@ -92,7 +97,7 @@
         <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="p-6 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 class="text-xl font-bold text-slate-800">Lista Completa de Matérias</h2>
-                <span class="text-xs font-medium bg-slate-200 text-slate-600 px-3 py-1.5 rounded-full">Ordenado pelo prazo mais próximo</span>
+                <span class="text-xs font-medium bg-slate-200 text-slate-600 px-3 py-1.5 rounded-full">Ordenado cronologicamente</span>
             </div>
             
             <div class="overflow-x-auto">
@@ -100,10 +105,8 @@
                     <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
                         <tr>
                             <th class="px-5 py-4 font-semibold text-center w-16" title="Marcar como Interesse do MPO">MPO</th>
-                            <th class="px-5 py-4 font-semibold">Matéria</th>
-                            <th class="px-5 py-4 font-semibold">Ementa</th>
-                            <th class="px-5 py-4 font-semibold whitespace-nowrap">Recebimento</th>
-                            <th class="px-5 py-4 font-semibold whitespace-nowrap">Prazo Sanção</th>
+                            <th class="px-5 py-4 font-semibold w-1/3">Matéria & Prazos</th>
+                            <th class="px-5 py-4 font-semibold">Detalhes da Proposição</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-slate-100 bg-white text-sm"></tbody>
@@ -113,123 +116,167 @@
     </div>
 
     <script>
-        // Formatação auxiliar de Data
         const formatDate = (isoStr) => {
             const [y, m, d] = isoStr.split('-');
             return `${d}/${m}/${y}`;
         };
 
-        // Dados extraídos do Congresso
+        // --- DADOS DINAMICOS INICIO ---
+        // O robô em Python substituirá esta lista diariamente. Se houver falha, estes dados servirão de fallback.
         const dados = [
-            { materia: "PL 5868/2025", ementa: "Dispõe sobre os direitos de pessoas com diabetes mellitus tipo 1...", recebimento: "2026-06-03", prazo: "2026-07-08" },
-            { materia: "PL 6223/2023", ementa: "Inclui no Calendário Turístico Oficial do Brasil as datas das romarias do Município de Juazeiro do Norte...", recebimento: "2026-06-09", prazo: "2026-06-29" },
-            { materia: "PL 1986/2024", ementa: "Institui campanhas de conscientização sobre os sintomas dos principais tipos de câncer infantil...", recebimento: "2026-06-09", prazo: "2026-06-29" },
-            { materia: "PL 5057/2023", ementa: "Cria a Rota Turística da Fé, no Estado do Ceará.", recebimento: "2026-06-09", prazo: "2026-06-29" },
-            { materia: "PL 3428/2023", ementa: "Fixa o limite máximo permitido de chumbo em tintas e em materiais similares...", recebimento: "2026-06-09", prazo: "2026-06-29" },
-            { materia: "PL 3758/2023", ementa: "Cria a Rota Turística das Cidades Coloniais Alagoanas, no Estado de Alagoas.", recebimento: "2026-06-09", prazo: "2026-06-29" },
-            { materia: "PL 2940/2023", ementa: "Torna obrigatória a criação de comissão de prevenção de tromboembolismo venoso nos hospitais.", recebimento: "2026-06-10", prazo: "2026-06-30" },
-            { materia: "PL 2142/2025", ementa: "Revoga condições para o registro de medicamentos e insumos farmacêuticos de procedência estrangeira.", recebimento: "2026-06-10", prazo: "2026-06-30" },
-            { materia: "PL 2992/2023", ementa: "Cria o Roteiro Turístico Caminhos da Fé, nos Estados de Minas Gerais e de São Paulo.", recebimento: "2026-06-10", prazo: "2026-06-30" },
-            { materia: "PL 8324/2014", ementa: "Institui medidas destinadas à prevenção do uso inadequado de psicofármacos em crianças e adolescentes.", recebimento: "2026-06-10", prazo: "2026-06-30" },
-            { materia: "PL 789/2024", ementa: "Inscreve o nome de Ayrton Senna da Silva no Livro dos Heróis e Heroínas da Pátria.", recebimento: "2026-06-10", prazo: "2026-06-30" },
-            { materia: "PL 996/2023", ementa: "Garante o abastecimento de cestas básicas à rede de acolhimento a mulheres em situação de violência...", recebimento: "2026-06-11", prazo: "2026-07-01" },
-            { materia: "PL 7801/2010", ementa: "Determina a observância do Dia Mundial em Memória das Vítimas de Acidentes de Trânsito.", recebimento: "2026-06-11", prazo: "2026-07-01" },
-            { materia: "PL 3663/2023", ementa: "Inscreve o nome de Pedro Jorge de Melo e Silva no Livro dos Heróis e Heroínas da Pátria.", recebimento: "2026-06-11", prazo: "2026-07-01" },
-            { materia: "PL 2896/2024", ementa: "Confere o título de Capital Nacional da Louça ao Município de Campo Largo, no Estado do Paraná.", recebimento: "2026-06-15", prazo: "2026-07-03" },
-            { materia: "PLP 55/2026", ementa: "Estabelece condições à concessão de isenção do ISS para a Copa do Mundo Feminina da FIFA 2027.", recebimento: "2026-06-15", prazo: "2026-07-03" },
-            { materia: "PL 5760/2023", ementa: "Estabelece medidas de proteção e acolhimento a trabalhadores resgatados de condição análoga à de escravo.", recebimento: "2026-06-15", prazo: "2026-07-03" },
-            { materia: "PLC 121/2015", ementa: "Regulamenta a profissão de protesista/ortesista ortopédico.", recebimento: "2026-06-15", prazo: "2026-07-03" },
-            { materia: "PLP 128/2022", ementa: "Destina recursos do Funpen à capacitação dos servidores do sistema penitenciário nacional.", recebimento: "2026-06-15", prazo: "2026-07-03" },
-            { materia: "PL 2199/2022", ementa: "Estabelece a utilização do Símbolo Internacional de Acessibilidade.", recebimento: "2026-06-18", prazo: "2026-07-08" },
-            { materia: "PL 3801/2004", ementa: "Institui o Dia Nacional do Vinho.", recebimento: "2026-06-18", prazo: "2026-07-08" },
-            { materia: "PL 2379/2023", ementa: "Institui o Dia Nacional dos Congados e Reinados.", recebimento: "2026-06-23", prazo: "2026-07-13" },
-            { materia: "PL 4088/2023", ementa: "Inclui educação política e direitos da cidadania como componente curricular da educação básica.", recebimento: "2026-06-23", prazo: "2026-07-13" },
-            { materia: "PL 1960/2022", ementa: "Confere o título de Capital Nacional da Maior Onda do Brasil a Jaguaruna - SC.", recebimento: "2026-06-23", prazo: "2026-07-13" },
-            { materia: "PL 96/2024", ementa: "Especifica atividades para aperfeiçoamento profissional da educação básica pública.", recebimento: "2026-06-23", prazo: "2026-07-13" },
-            { materia: "PL 5672/2025", ementa: "Transferência simbólica da sede do Governo Federal para Salvador - BA em 2 de julho.", recebimento: "2026-06-23", prazo: "2026-07-13" },
-            { materia: "PL 4368/2020", ementa: "Institui o Mês Nacional de Conscientização da Fibrose Cística - Setembro Roxo.", recebimento: "2026-06-23", prazo: "2026-07-13" },
-            { materia: "PL 6133/2025", ementa: "Cria a Universidade Federal do Esporte.", recebimento: "2026-06-23", prazo: "2026-07-13" },
-            { materia: "PL 2522/2021", ementa: "Confere o título de Capital Nacional do Açafrão ao Município de Mara Rosa - GO.", recebimento: "2026-06-23", prazo: "2026-07-13" },
-            { materia: "PL 6113/2023", ementa: "Cria o Banco Nacional de Boas Práticas na Prevenção e Combate à Violência contra a Mulher.", recebimento: "2026-06-23", prazo: "2026-07-13" },
-            { materia: "PL 162/2024", ementa: "Institui a Semana Nacional da Ética e da Cidadania.", recebimento: "2026-06-23", prazo: "2026-07-13" }
+            { 
+                materia: "PL 6223/2023", 
+                ementa: "Inclui no Calendário Turístico Oficial do Brasil as datas das romarias do Município de Juazeiro do Norte (CE).", 
+                recebimento: "2026-06-09", 
+                prazo: "2026-06-29",
+                autoria: "Senador Fulano de Tal",
+                assunto: "Cultura e Turismo"
+            },
+            { 
+                materia: "PL 2940/2023", 
+                ementa: "Torna obrigatória a criação de comissão de prevenção de tromboembolismo venoso nos hospitais.", 
+                recebimento: "2026-06-10", 
+                prazo: "2026-06-30",
+                autoria: "Deputada Maria Silva",
+                assunto: "Saúde Pública"
+            },
+            { 
+                materia: "PL 996/2023", 
+                ementa: "Garante o abastecimento de cestas básicas à rede de acolhimento a mulheres em situação de violência.", 
+                recebimento: "2026-06-11", 
+                prazo: "2026-07-01",
+                autoria: "Senadora Joana",
+                assunto: "Direitos Humanos"
+            },
+            { 
+                materia: "PL 5868/2025", 
+                ementa: "Dispõe sobre os direitos de pessoas com diabetes mellitus tipo 1.", 
+                recebimento: "2026-06-03", 
+                prazo: "2026-07-08",
+                autoria: "Vários Autores",
+                assunto: "Saúde"
+            }
         ];
+        // --- DADOS DINAMICOS FIM ---
 
         // Ordena pela data mais próxima
         dados.sort((a, b) => a.prazo.localeCompare(b.prazo));
 
-        // Configuração de datas do sistema
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const nextWeek = new Date(today);
-        nextWeek.setDate(nextWeek.getDate() + 7);
-
-        // Inicializa lendo do Local Storage do navegador
         const savedMpoInterests = JSON.parse(localStorage.getItem('mpoInterests')) || {};
-        dados.forEach(d => {
-            d.interesseMpo = !!savedMpoInterests[d.materia];
-        });
+        dados.forEach(d => { d.interesseMpo = !!savedMpoInterests[d.materia]; });
 
-        // Função disparada ao clicar no Checkbox (Salva apenas localmente)
         function atualizarInteresse(materiaId, isChecked) {
             const item = dados.find(d => d.materia === materiaId);
             if (item) item.interesseMpo = isChecked;
             
-            // Salva no LocalStorage
             const currentSaved = JSON.parse(localStorage.getItem('mpoInterests')) || {};
             currentSaved[materiaId] = isChecked;
             localStorage.setItem('mpoInterests', JSON.stringify(currentSaved));
             
-            renderDashboard(); // Re-renderiza para atualizar as cores
+            renderDashboard();
         }
 
+        // Elementos da UI
+        const vencidosList = document.getElementById('vencidos-list');
         const hojeList = document.getElementById('hoje-list');
         const semanaList = document.getElementById('semana-list');
         const timelineList = document.getElementById('timeline-list');
         const tableBody = document.getElementById('table-body');
+        const dataVisor = document.getElementById('data-atual-visor');
 
         function renderDashboard() {
-            // Limpa as listas
-            hojeList.innerHTML = '';
-            semanaList.innerHTML = '';
-            timelineList.innerHTML = '';
-            tableBody.innerHTML = '';
+            vencidosList.innerHTML = ''; hojeList.innerHTML = ''; 
+            semanaList.innerHTML = ''; timelineList.innerHTML = ''; tableBody.innerHTML = '';
             
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            
+            const opt = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            dataVisor.textContent = today.toLocaleDateString('pt-BR', opt);
+
             const timelineData = {};
 
             dados.forEach(item => {
-                // Renderiza na tabela
-                const rowClass = item.interesseMpo ? 'bg-indigo-50/70 hover:bg-indigo-100' : 'hover:bg-slate-50';
-                tableBody.innerHTML += `
-                    <tr class="${rowClass} transition-colors duration-150">
-                        <td class="px-5 py-4 border-b border-slate-100 text-center">
-                            <input type="checkbox" class="mpo-toggle w-5 h-5 text-indigo-600 bg-gray-100 border-gray-300 rounded cursor-pointer accent-indigo-600" data-materia="${item.materia}" ${item.interesseMpo ? 'checked' : ''}>
-                        </td>
-                        <td class="px-5 py-4 border-b border-slate-100 font-semibold whitespace-nowrap">
-                            <div class="flex flex-col gap-1">
-                                <a href="https://www.congressonacional.leg.br/materias/materias-aguardando-sancao" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1 group w-fit">
-                                    ${item.materia}
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-slate-400 group-hover:text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
-                                </a>
-                                ${item.interesseMpo ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-200 text-indigo-800 uppercase tracking-widest shadow-sm w-fit">MPO</span>' : ''}
-                            </div>
-                        </td>
-                        <td class="px-5 py-4 border-b border-slate-100 text-slate-600 truncate max-w-xs md:max-w-md" title="${item.ementa}">${item.ementa}</td>
-                        <td class="px-5 py-4 border-b border-slate-100 whitespace-nowrap text-slate-500">${formatDate(item.recebimento)}</td>
-                        <td class="px-5 py-4 border-b border-slate-100 font-bold text-slate-700 whitespace-nowrap">${formatDate(item.prazo)}</td>
-                    </tr>
-                `;
-
-                // Classifica para os cards do topo
                 const [y, mo, d] = item.prazo.split('-');
                 const prazoDate = new Date(y, mo - 1, d);
                 prazoDate.setHours(0,0,0,0);
                 
+                const diffTime = prazoDate.getTime() - today.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
                 const mpoTag = item.interesseMpo ? `<span class="ml-2 px-2 py-0.5 bg-indigo-600 text-white text-[10px] font-bold rounded shadow-sm flex items-center gap-1 uppercase tracking-wider">⭐ MPO</span>` : '';
                 
-                if (prazoDate.getTime() === today.getTime()) {
-                    // Hoje
+                // Badges da Tabela Melhorada
+                let statusBadge = `<span class="bg-blue-100 text-blue-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-blue-200">Faltam ${diffDays} dias</span>`;
+                if(diffDays < 0) statusBadge = `<span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-slate-300">Vencido</span>`;
+                else if(diffDays === 0) statusBadge = `<span class="bg-red-100 text-red-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-red-200 animate-pulse">Expira Hoje</span>`;
+                else if(diffDays <= 7) statusBadge = `<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-amber-200">Próxima Semana</span>`;
+
+                const rowClass = item.interesseMpo ? 'bg-indigo-50/40 hover:bg-indigo-100/60' : 'hover:bg-slate-50';
+                
+                tableBody.innerHTML += `
+                    <tr class="${rowClass} transition-colors duration-150 group">
+                        <td class="px-5 py-6 border-b border-slate-200 text-center align-top">
+                            <input type="checkbox" class="mpo-toggle w-5 h-5 mt-1 text-indigo-600 bg-gray-100 border-gray-300 rounded cursor-pointer accent-indigo-600 shadow-sm" data-materia="${item.materia}" ${item.interesseMpo ? 'checked' : ''}>
+                        </td>
+                        <td class="px-5 py-6 border-b border-slate-200 align-top">
+                            <div class="flex flex-col gap-3">
+                                <div class="flex flex-col items-start gap-1">
+                                    <a href="https://www.congressonacional.leg.br/materias/materias-aguardando-sancao" target="_blank" rel="noopener noreferrer" class="text-lg font-bold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1.5 transition">
+                                        ${item.materia}
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400 group-hover:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                    </a>
+                                    ${item.interesseMpo ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-200 text-indigo-800 uppercase tracking-widest shadow-sm">Marcado MPO</span>' : ''}
+                                </div>
+                                <div class="flex flex-col gap-1 text-sm bg-white p-3 rounded-lg border border-slate-200 shadow-sm w-fit">
+                                    <div class="flex gap-2 items-center">
+                                        <span class="text-slate-500 font-medium">Recebimento:</span>
+                                        <span class="text-slate-700">${formatDate(item.recebimento)}</span>
+                                    </div>
+                                    <div class="flex gap-2 items-center">
+                                        <span class="text-slate-500 font-medium">Prazo Final:</span>
+                                        <span class="text-slate-900 font-bold">${formatDate(item.prazo)}</span>
+                                    </div>
+                                    <div class="mt-1">${statusBadge}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-5 py-6 border-b border-slate-200 align-top">
+                            <div class="flex flex-col gap-4">
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ementa</h4>
+                                    <p class="text-slate-700 leading-relaxed text-sm">${item.ementa}</p>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Autoria</h4>
+                                        <p class="text-slate-800 text-sm font-medium">${item.autoria || 'Não especificada'}</p>
+                                    </div>
+                                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Assunto</h4>
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-200 text-slate-700">
+                                            ${item.assunto || 'Diversos'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                if (diffDays < 0) {
+                    const diasAtras = Math.abs(diffDays);
+                    const borderClass = item.interesseMpo ? 'border-indigo-400 ring-1 ring-indigo-300 bg-indigo-50/70' : 'border-slate-200 bg-slate-50';
+                    vencidosList.innerHTML += `
+                        <div class="p-4 text-slate-700 rounded-xl border transition hover:shadow-md ${borderClass}">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-bold text-slate-900 text-base flex items-center">${item.materia} ${mpoTag}</span>
+                                <span class="px-2 py-0.5 bg-slate-200 text-slate-600 text-xs font-bold rounded">Passou</span>
+                            </div>
+                            <p class="text-xs text-slate-500 line-clamp-1 mb-1" title="${item.ementa}">${item.ementa}</p>
+                            <span class="text-xs font-medium text-slate-500">Vencido há ${diasAtras} dia(s) (${formatDate(item.prazo)})</span>
+                        </div>`;
+                } else if (diffDays === 0) {
                     const borderClass = item.interesseMpo ? 'border-indigo-400 ring-2 ring-indigo-300 bg-indigo-50/50' : 'border-red-100 bg-red-50';
                     hojeList.innerHTML += `
                         <div class="p-4 text-red-900 rounded-xl border transition hover:shadow-md ${borderClass}">
@@ -239,11 +286,7 @@
                             </div>
                             <p class="text-xs text-red-800/80 line-clamp-2" title="${item.ementa}">${item.ementa}</p>
                         </div>`;
-                } else if (prazoDate > today && prazoDate <= nextWeek) {
-                    // Próximos 7 dias - Mostra TODOS os que expiram, destacando se for MPO
-                    const diffTime = Math.abs(prazoDate - today);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                    
+                } else if (diffDays > 0 && diffDays <= 7) {
                     const borderClass = item.interesseMpo ? 'border-indigo-400 ring-1 ring-indigo-300 bg-indigo-50' : 'border-amber-200 bg-amber-50/50';
                     const textClass = item.interesseMpo ? 'text-indigo-900' : 'text-amber-900';
                     const titleClass = item.interesseMpo ? 'text-indigo-800' : 'text-amber-800';
@@ -258,39 +301,31 @@
                                 </span>
                             </div>
                             <div class="text-xs opacity-80 flex items-center gap-1 mt-1 font-medium">
-                                Data final: ${formatDate(item.prazo)}
+                                Final: ${formatDate(item.prazo)}
                             </div>
                         </div>`;
                 } else {
-                    // Restante vai pra linha do tempo
                     if (!timelineData[item.prazo]) timelineData[item.prazo] = [];
                     timelineData[item.prazo].push(item);
                 }
             });
 
             const emptyStateSvg = `<svg class="mx-auto h-12 w-12 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`;
-            
-            if(hojeList.innerHTML.trim() === '') hojeList.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-slate-500 px-4 pb-8">${emptyStateSvg}<p class="font-medium">Tudo tranquilo.</p><p class="text-sm text-slate-400 mt-1">Nenhum prazo expira hoje.</p></div>`;
-            if(semanaList.innerHTML.trim() === '') semanaList.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-slate-500 px-4 pb-8">${emptyStateSvg}<p class="font-medium">Sem expirações próximas.</p><p class="text-sm text-slate-400 mt-1">Nenhum prazo expira nos próximos 7 dias.</p></div>`;
+            if(vencidosList.innerHTML.trim() === '') vencidosList.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-slate-500 px-4 pb-8">${emptyStateSvg}<p class="font-medium">Nenhum prazo atrasado.</p></div>`;
+            if(hojeList.innerHTML.trim() === '') hojeList.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-slate-500 px-4 pb-8">${emptyStateSvg}<p class="font-medium">Tudo tranquilo.</p></div>`;
+            if(semanaList.innerHTML.trim() === '') semanaList.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-slate-500 px-4 pb-8">${emptyStateSvg}<p class="font-medium">Sem expirações nos próximos 7 dias.</p></div>`;
 
             Object.keys(timelineData).sort().forEach(dateKey => {
                 const items = timelineData[dateKey];
                 const projetosHtml = items.map(i => {
                     const bgClass = i.interesseMpo ? 'bg-indigo-600 text-white border-indigo-700 shadow-md transform hover:scale-105' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100';
                     const iconColor = i.interesseMpo ? 'text-indigo-200' : 'text-slate-400';
-                    return `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm font-semibold shadow-sm transition cursor-default ${bgClass}" title="${i.ementa}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ${iconColor}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        ${i.materia}
-                    </span>`;
+                    return `<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm font-semibold shadow-sm transition cursor-default ${bgClass}" title="${i.ementa}"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ${iconColor}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>${i.materia}</span>`;
                 }).join('');
                 
                 timelineList.innerHTML += `
                     <li class="mb-10 ml-8">
-                        <span class="absolute flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full -left-[13px] ring-4 ring-white shadow-sm border border-blue-200">
-                            <div class="w-2.5 h-2.5 bg-blue-600 rounded-full"></div>
-                        </span>
+                        <span class="absolute flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full -left-[13px] ring-4 ring-white shadow-sm border border-blue-200"><div class="w-2.5 h-2.5 bg-blue-600 rounded-full"></div></span>
                         <div class="flex flex-col md:flex-row md:items-center gap-2 mb-3">
                             <h3 class="flex items-center text-lg font-bold text-slate-900 bg-blue-50 px-3 py-1 rounded-md w-fit border border-blue-100">${formatDate(dateKey)}</h3>
                             <span class="text-sm font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-full w-fit">${items.length} matéria(s)</span>
@@ -306,7 +341,6 @@
             });
         }
 
-        // Renderiza o painel ao carregar
         renderDashboard();
     </script>
 </body>
