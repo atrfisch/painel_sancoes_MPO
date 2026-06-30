@@ -1,0 +1,22 @@
+steps:
+  - name: Clonar o Repositório
+    uses: actions/checkout@v3
+
+  - name: Configurar Python
+    uses: actions/setup-python@v4
+    with:
+      python-version: '3.10'
+
+  - name: Instalar Dependências
+    run: pip install requests beautifulsoup4
+
+  - name: Rodar o Robô de Extração
+    run: python atualizador.py
+
+  - name: Commitar e Fazer Push das Mudanças
+    run: |
+      git config --global user.name "Robô de Atualização MPO"
+      git config --global user.email "robo@github-actions"
+      git add index.html
+      git commit -m "🤖 Atualização diária automática das matérias" || echo "Nenhuma mudança nova no congresso hoje"
+      git push
