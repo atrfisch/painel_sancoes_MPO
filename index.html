@@ -45,20 +45,8 @@
             </div>
         </header>
 
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            <!-- Card: Vencidos / Encerrados -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden flex flex-col h-80">
-                <div class="absolute top-0 left-0 w-full h-1 bg-slate-700"></div>
-                <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Prazos Encerrados
-                </h2>
-                <div id="vencidos-list" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-2"></div>
-            </div>
-
             <!-- Card: Hoje -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden flex flex-col h-80">
                 <div class="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
@@ -125,20 +113,20 @@
         // O robô em Python substituirá esta lista diariamente. Se houver falha, estes dados servirão de fallback.
         const dados = [
             { 
-                materia: "PL 6223/2023", 
-                ementa: "Inclui no Calendário Turístico Oficial do Brasil as datas das romarias do Município de Juazeiro do Norte (CE).", 
-                recebimento: "2026-06-09", 
-                prazo: "2026-06-29",
-                autoria: "Senador Fulano de Tal",
-                assunto: "Cultura e Turismo"
-            },
-            { 
                 materia: "PL 2940/2023", 
                 ementa: "Torna obrigatória a criação de comissão de prevenção de tromboembolismo venoso nos hospitais.", 
                 recebimento: "2026-06-10", 
                 prazo: "2026-06-30",
                 autoria: "Deputada Maria Silva",
                 assunto: "Saúde Pública"
+            },
+            { 
+                materia: "PL 2142/2025", 
+                ementa: "Revoga condições para o registro de medicamentos e insumos farmacêuticos de procedência estrangeira.", 
+                recebimento: "2026-06-10", 
+                prazo: "2026-06-30",
+                autoria: "Senador Carlos Souza",
+                assunto: "Saúde e Economia"
             },
             { 
                 materia: "PL 996/2023", 
@@ -149,12 +137,36 @@
                 assunto: "Direitos Humanos"
             },
             { 
+                materia: "PL 2896/2024", 
+                ementa: "Confere o título de Capital Nacional da Louça ao Município de Campo Largo, no Estado do Paraná.", 
+                recebimento: "2026-06-15", 
+                prazo: "2026-07-03",
+                autoria: "Vários Autores",
+                assunto: "Cultura e Turismo"
+            },
+            { 
                 materia: "PL 5868/2025", 
                 ementa: "Dispõe sobre os direitos de pessoas com diabetes mellitus tipo 1.", 
                 recebimento: "2026-06-03", 
                 prazo: "2026-07-08",
-                autoria: "Vários Autores",
+                autoria: "Senador Antônio",
                 assunto: "Saúde"
+            },
+            { 
+                materia: "PL 2199/2022", 
+                ementa: "Estabelece a utilização do Símbolo Internacional de Acessibilidade.", 
+                recebimento: "2026-06-18", 
+                prazo: "2026-07-08",
+                autoria: "Deputado Marcos",
+                assunto: "Inclusão e Acessibilidade"
+            },
+            { 
+                materia: "PL 2379/2023", 
+                ementa: "Institui o Dia Nacional dos Congados e Reinados.", 
+                recebimento: "2026-06-23", 
+                prazo: "2026-07-13",
+                autoria: "Senadora Lúcia",
+                assunto: "Cultura"
             }
         ];
         // --- DADOS DINAMICOS FIM ---
@@ -177,7 +189,6 @@
         }
 
         // Elementos da UI
-        const vencidosList = document.getElementById('vencidos-list');
         const hojeList = document.getElementById('hoje-list');
         const semanaList = document.getElementById('semana-list');
         const timelineList = document.getElementById('timeline-list');
@@ -185,7 +196,7 @@
         const dataVisor = document.getElementById('data-atual-visor');
 
         function renderDashboard() {
-            vencidosList.innerHTML = ''; hojeList.innerHTML = ''; 
+            hojeList.innerHTML = ''; 
             semanaList.innerHTML = ''; timelineList.innerHTML = ''; tableBody.innerHTML = '';
             
             const today = new Date();
@@ -196,7 +207,15 @@
 
             const timelineData = {};
 
-            dados.forEach(item => {
+            // Filtra os dados, ignorando por completo projetos cujo prazo já expirou no passado
+            const dadosAtivos = dados.filter(item => {
+                const [y, mo, d] = item.prazo.split('-');
+                const prazoDate = new Date(y, mo - 1, d);
+                prazoDate.setHours(0,0,0,0);
+                return prazoDate.getTime() >= today.getTime();
+            });
+
+            dadosAtivos.forEach(item => {
                 const [y, mo, d] = item.prazo.split('-');
                 const prazoDate = new Date(y, mo - 1, d);
                 prazoDate.setHours(0,0,0,0);
@@ -208,8 +227,7 @@
                 
                 // Badges da Tabela Melhorada
                 let statusBadge = `<span class="bg-blue-100 text-blue-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-blue-200">Faltam ${diffDays} dias</span>`;
-                if(diffDays < 0) statusBadge = `<span class="bg-slate-200 text-slate-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-slate-300">Vencido</span>`;
-                else if(diffDays === 0) statusBadge = `<span class="bg-red-100 text-red-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-red-200 animate-pulse">Expira Hoje</span>`;
+                if(diffDays === 0) statusBadge = `<span class="bg-red-100 text-red-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-red-200 animate-pulse">Expira Hoje</span>`;
                 else if(diffDays <= 7) statusBadge = `<span class="bg-amber-100 text-amber-700 text-xs px-2.5 py-0.5 rounded-full font-medium border border-amber-200">Próxima Semana</span>`;
 
                 const rowClass = item.interesseMpo ? 'bg-indigo-50/40 hover:bg-indigo-100/60' : 'hover:bg-slate-50';
@@ -264,19 +282,7 @@
                     </tr>
                 `;
 
-                if (diffDays < 0) {
-                    const diasAtras = Math.abs(diffDays);
-                    const borderClass = item.interesseMpo ? 'border-indigo-400 ring-1 ring-indigo-300 bg-indigo-50/70' : 'border-slate-200 bg-slate-50';
-                    vencidosList.innerHTML += `
-                        <div class="p-4 text-slate-700 rounded-xl border transition hover:shadow-md ${borderClass}">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="font-bold text-slate-900 text-base flex items-center">${item.materia} ${mpoTag}</span>
-                                <span class="px-2 py-0.5 bg-slate-200 text-slate-600 text-xs font-bold rounded">Passou</span>
-                            </div>
-                            <p class="text-xs text-slate-500 line-clamp-1 mb-1" title="${item.ementa}">${item.ementa}</p>
-                            <span class="text-xs font-medium text-slate-500">Vencido há ${diasAtras} dia(s) (${formatDate(item.prazo)})</span>
-                        </div>`;
-                } else if (diffDays === 0) {
+                if (diffDays === 0) {
                     const borderClass = item.interesseMpo ? 'border-indigo-400 ring-2 ring-indigo-300 bg-indigo-50/50' : 'border-red-100 bg-red-50';
                     hojeList.innerHTML += `
                         <div class="p-4 text-red-900 rounded-xl border transition hover:shadow-md ${borderClass}">
@@ -311,7 +317,6 @@
             });
 
             const emptyStateSvg = `<svg class="mx-auto h-12 w-12 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>`;
-            if(vencidosList.innerHTML.trim() === '') vencidosList.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-slate-500 px-4 pb-8">${emptyStateSvg}<p class="font-medium">Nenhum prazo atrasado.</p></div>`;
             if(hojeList.innerHTML.trim() === '') hojeList.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-slate-500 px-4 pb-8">${emptyStateSvg}<p class="font-medium">Tudo tranquilo.</p></div>`;
             if(semanaList.innerHTML.trim() === '') semanaList.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-slate-500 px-4 pb-8">${emptyStateSvg}<p class="font-medium">Sem expirações nos próximos 7 dias.</p></div>`;
 
